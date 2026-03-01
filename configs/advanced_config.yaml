@@ -84,6 +84,11 @@ training:
   output_dir: "outputs/advanced_training"
   log_dir: "logs/advanced_training"
 
+# Logging configuration
+logging:
+  log_file: "logs/training.log"
+  log_level: "INFO"
+
 data:
   # Data files
   train_file: "data/train_samples.json"
