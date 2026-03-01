@@ -69,7 +69,7 @@ training:
   
   # Evaluation
   eval_steps: 100
-  evaluation_strategy: "steps"
+  evaluation_strategy: "no"  # Disabled temporarily to avoid logits issue
   
   # Early stopping
   early_stopping: true
