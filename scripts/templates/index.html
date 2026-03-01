@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhoBERT Legal Document Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .main-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            color: #6c757d;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab:hover {
+            background: #e9ecef;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            background: white;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 30px;
+            animation: fadeIn 0.3s;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+            resize: vertical;
+        }
+        
+        textarea:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            min-height: 200px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result-card {
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+            display: none;
+        }
+        
+        .result-card.show {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        .result-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .result-item {
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .result-label {
+            font-weight: 600;
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        .confidence-bar {
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .entity-tag {
+            display: inline-block;
+            padding: 5px 12px;
+            margin: 5px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .entity-LAW { background: #e3f2fd; color: #1976d2; }
+        .entity-ARTICLE { background: #f3e5f5; color: #7b1fa2; }
+        .entity-ORG { background: #e8f5e9; color: #388e3c; }
+        .entity-PER { background: #fff3e0; color: #f57c00; }
+        .entity-DATE { background: #fce4ec; color: #c2185b; }
+        .entity-LOC { background: #e0f2f1; color: #00796b; }
+        
+        .answer-box {
+            padding: 20px;
+            background: #e8f5e9;
+            border-left: 5px solid #4caf50;
+            border-radius: 10px;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-card {
+            margin-top: 20px;
+            padding: 20px;
+            background: #ffebee;
+            border-left: 5px solid #f44336;
+            border-radius: 10px;
+            display: none;
+            color: #c62828;
+        }
+        
+        .error-card.show {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        .file-upload {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .file-upload:hover {
+            background: #f8f9fa;
+            border-color: #764ba2;
+        }
+        
+        .file-upload input[type="file"] {
+            display: none;
+        }
+        
+        .file-name {
+            margin-top: 10px;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .probabilities {
+            margin-top: 15px;
+        }
+        
+        .prob-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+        }
+        
+        .prob-label {
+            min-width: 200px;
+            font-weight: 500;
+        }
+        
+        .prob-bar {
+            flex: 1;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0 15px;
+        }
+        
+        .prob-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+        }
+        
+        .prob-value {
+            min-width: 60px;
+            text-align: right;
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .status-healthy {
+            background: #e8f5e9;
+            color: #4caf50;
+        }
+        
+        .status-unhealthy {
+            background: #ffebee;
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 PhoBERT Legal Document Analyzer</h1>
+            <p>Phân tích văn bản pháp lý tiếng Việt với AI</p>
+            <div style="margin-top: 10px;">
+                <span id="healthStatus">Đang kiểm tra...</span>
+            </div>
+        </div>
+        
+        <div class="main-card">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('classification')">
+                    📋 Phân loại
+                </div>
+                <div class="tab" onclick="switchTab('ner')">
+                    🏷️ Nhận diện thực thể
+                </div>
+                <div class="tab" onclick="switchTab('qa')">
+                    ❓ Hỏi đáp
+                </div>
+                <div class="tab" onclick="switchTab('summarization')">
+                    📝 Tóm tắt
+                </div>
+            </div>
+            
+            <!-- Classification Tab -->
+            <div id="classification" class="tab-content active">
+                <h2>📋 Phân loại văn bản pháp lý</h2>
+                <p style="color: #6c757d; margin-bottom: 20px;">Xác định loại văn bản: Hình sự, Dân sự, Hành chính, Giao thông, Doanh nghiệp, Đất đai, Lao động, Bất động sản</p>
+                
+                <div class="input-group">
+                    <label>📄 Nhập văn bản hoặc upload file:</label>
+                    <textarea id="classificationText" placeholder="Nhập nội dung văn bản pháp lý cần phân loại..."></textarea>
+                </div>
+                
+                <button class="btn" onclick="predictClassification()">🚀 Phân tích</button>
+                
+                <div class="loading" id="classificationLoading">
+                    <div class="spinner"></div>
+                    <p>Đang phân tích...</p>
+                </div>
+                
+                <div class="error-card" id="classificationError"></div>
+                
+                <div class="result-card" id="classificationResult">
+                    <h3>✨ Kết quả phân loại</h3>
+                    <div class="result-item">
+                        <div class="result-label" id="classificationLabel"></div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="classificationConfidence"></div>
+                        </div>
+                    </div>
+                    <div class="probabilities" id="classificationProbs"></div>
+                </div>
+            </div>
+            
+            <!-- NER Tab -->
+            <div id="ner" class="tab-content">
+                <h2>🏷️ Nhận diện thực thể (Named Entity Recognition)</h2>
+                <p style="color: #6c757d; margin-bottom: 20px;">Trích xuất các thực thể: Luật, Điều khoản, Tổ chức, Người, Ngày tháng, Địa điểm</p>
+                
+                <div class="input-group">
+                    <label>📄 Nhập văn bản:</label>
+                    <textarea id="nerText" placeholder="Nhập nội dung văn bản để nhận diện các thực thể..."></textarea>
+                </div>
+                
+                <button class="btn" onclick="predictNER()">🔍 Trích xuất thực thể</button>
+                
+                <div class="loading" id="nerLoading">
+                    <div class="spinner"></div>
+                    <p>Đang phân tích...</p>
+                </div>
+                
+                <div class="error-card" id="nerError"></div>
+                
+                <div class="result-card" id="nerResult">
+                    <h3>✨ Thực thể được nhận diện</h3>
+                    <div id="nerEntities"></div>
+                </div>
+            </div>
+            
+            <!-- QA Tab -->
+            <div id="qa" class="tab-content">
+                <h2>❓ Hỏi đáp về văn bản pháp lý</h2>
+                <p style="color: #6c757d; margin-bottom: 20px;">Đặt câu hỏi về nội dung văn bản pháp lý</p>
+                
+                <div class="input-group">
+                    <label>📄 Ngữ cảnh (văn bản pháp lý):</label>
+                    <textarea id="qaContext" placeholder="Nhập nội dung văn bản pháp lý..."></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label>❓ Câu hỏi:</label>
+                    <input type="text" id="qaQuestion" placeholder="Đặt câu hỏi về văn bản...">
+                </div>
+                
+                <button class="btn" onclick="predictQA()">💬 Tìm câu trả lời</button>
+                
+                <div class="loading" id="qaLoading">
+                    <div class="spinner"></div>
+                    <p>Đang tìm câu trả lời...</p>
+                </div>
+                
+                <div class="error-card" id="qaError"></div>
+                
+                <div class="result-card" id="qaResult">
+                    <h3>✨ Câu trả lời</h3>
+                    <div class="answer-box" id="qaAnswer"></div>
+                    <div style="margin-top: 15px; color: #6c757d;">
+                        Độ tin cậy: <strong id="qaConfidence"></strong>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Summarization Tab -->
+            <div id="summarization" class="tab-content">
+                <h2>📝 Tóm tắt văn bản pháp lý</h2>
+                <p style="color: #6c757d; margin-bottom: 20px;">Tạo bản tóm tắt ngắn gọn của văn bản pháp lý</p>
+                
+                <div class="input-group">
+                    <label>📄 Nhập văn bản:</label>
+                    <textarea id="summaryText" placeholder="Nhập nội dung văn bản pháp lý cần tóm tắt..."></textarea>
+                </div>
+                
+                <button class="btn" onclick="predictSummary()">📄 Tóm tắt</button>
+                
+                <div class="loading" id="summaryLoading">
+                    <div class="spinner"></div>
+                    <p>Đang tóm tắt...</p>
+                </div>
+                
+                <div class="error-card" id="summaryError"></div>
+                
+                <div class="result-card" id="summaryResult">
+                    <h3>✨ Bản tóm tắt</h3>
+                    <div class="answer-box" id="summaryContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = '';
+        
+        // Check API health on load
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                const statusEl = document.getElementById('healthStatus');
+                
+                if (data.model_loaded) {
+                    statusEl.innerHTML = '✅ API đang hoạt động <span class="status-badge status-healthy">Sẵn sàng</span>';
+                } else {
+                    statusEl.innerHTML = '⚠️ API chưa load model <span class="status-badge status-unhealthy">Chưa sẵn sàng</span>';
+                }
+            } catch (error) {
+                const statusEl = document.getElementById('healthStatus');
+                statusEl.innerHTML = '❌ Không kết nối được API <span class="status-badge status-unhealthy">Offline</span>';
+            }
+        }
+        
+        // Switch tabs
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        // Classification
+        async function predictClassification() {
+            const text = document.getElementById('classificationText').value;
+            if (!text.trim()) {
+                showError('classificationError', 'Vui lòng nhập văn bản!');
+                return;
+            }
+            
+            showLoading('classificationLoading', true);
+            hideError('classificationError');
+            hideResult('classificationResult');
+            
+            try {
+                const response = await fetch(`${API_BASE}/predict`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        text: text,
+                        return_probabilities: true
+                    })
+                });
+                
+                if (!response.ok) throw new Error('API error');
+                
+                const data = await response.json();
+                displayClassificationResult(data);
+            } catch (error) {
+                showError('classificationError', 'Lỗi khi phân tích: ' + error.message);
+            } finally {
+                showLoading('classificationLoading', false);
+            }
+        }
+        
+        function displayClassificationResult(data) {
+            const labelEl = document.getElementById('classificationLabel');
+            const confidenceEl = document.getElementById('classificationConfidence');
+            const probsEl = document.getElementById('classificationProbs');
+            
+            // Main result
+            labelEl.textContent = `Loại văn bản: ${data.label}`;
+            const percentage = (data.confidence * 100).toFixed(2);
+            confidenceEl.style.width = percentage + '%';
+            confidenceEl.textContent = percentage + '%';
+            
+            // Probabilities
+            if (data.probabilities) {
+                probsEl.innerHTML = '<h4 style="margin-bottom: 10px;">Chi tiết xác suất:</h4>';
+                const sortedProbs = Object.entries(data.probabilities)
+                    .sort((a, b) => b[1] - a[1]);
+                
+                sortedProbs.forEach(([label, prob]) => {
+                    const percent = (prob * 100).toFixed(2);
+                    probsEl.innerHTML += `
+                        <div class="prob-item">
+                            <span class="prob-label">${label}</span>
+                            <div class="prob-bar">
+                                <div class="prob-fill" style="width: ${percent}%"></div>
+                            </div>
+                            <span class="prob-value">${percent}%</span>
+                        </div>
+                    `;
+                });
+            }
+            
+            document.getElementById('classificationResult').classList.add('show');
+        }
+        
+        // NER
+        async function predictNER() {
+            const text = document.getElementById('nerText').value;
+            if (!text.trim()) {
+                showError('nerError', 'Vui lòng nhập văn bản!');
+                return;
+            }
+            
+            showLoading('nerLoading', true);
+            hideError('nerError');
+            hideResult('nerResult');
+            
+            try {
+                const response = await fetch(`${API_BASE}/ner`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
+                
+                if (!response.ok) throw new Error('API error');
+                
+                const data = await response.json();
+                displayNERResult(data);
+            } catch (error) {
+                showError('nerError', 'Lỗi khi phân tích: ' + error.message);
+            } finally {
+                showLoading('nerLoading', false);
+            }
+        }
+        
+        function displayNERResult(data) {
+            const entitiesEl = document.getElementById('nerEntities');
+            
+            if (!data.entities || data.entities.length === 0) {
+                entitiesEl.innerHTML = '<p>Không tìm thấy thực thể nào.</p>';
+            } else {
+                const grouped = {};
+                data.entities.forEach(entity => {
+                    if (!grouped[entity.type]) grouped[entity.type] = [];
+                    grouped[entity.type].push(entity);
+                });
+                
+                entitiesEl.innerHTML = '';
+                Object.entries(grouped).forEach(([type, entities]) => {
+                    entitiesEl.innerHTML += `<h4 style="margin: 15px 0 10px 0;">${type}:</h4>`;
+                    entities.forEach(entity => {
+                        entitiesEl.innerHTML += `
+                            <span class="entity-tag entity-${type.replace('B-', '').replace('I-', '')}">
+                                ${entity.text}
+                            </span>
+                        `;
+                    });
+                });
+            }
+            
+            document.getElementById('nerResult').classList.add('show');
+        }
+        
+        // QA
+        async function predictQA() {
+            const context = document.getElementById('qaContext').value;
+            const question = document.getElementById('qaQuestion').value;
+            
+            if (!context.trim() || !question.trim()) {
+                showError('qaError', 'Vui lòng nhập đầy đủ ngữ cảnh và câu hỏi!');
+                return;
+            }
+            
+            showLoading('qaLoading', true);
+            hideError('qaError');
+            hideResult('qaResult');
+            
+            try {
+                const response = await fetch(`${API_BASE}/qa`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        context: context,
+                        question: question
+                    })
+                });
+                
+                if (!response.ok) throw new Error('API error');
+                
+                const data = await response.json();
+                displayQAResult(data);
+            } catch (error) {
+                showError('qaError', 'Lỗi khi tìm câu trả lời: ' + error.message);
+            } finally {
+                showLoading('qaLoading', false);
+            }
+        }
+        
+        function displayQAResult(data) {
+            document.getElementById('qaAnswer').textContent = data.answer;
+            document.getElementById('qaConfidence').textContent = 
+                (data.confidence * 100).toFixed(2) + '%';
+            document.getElementById('qaResult').classList.add('show');
+        }
+        
+        // Summarization
+        async function predictSummary() {
+            const text = document.getElementById('summaryText').value;
+            if (!text.trim()) {
+                showError('summaryError', 'Vui lòng nhập văn bản!');
+                return;
+            }
+            
+            showLoading('summaryLoading', true);
+            hideError('summaryError');
+            hideResult('summaryResult');
+            
+            try {
+                const response = await fetch(`${API_BASE}/summarize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
+                
+                if (!response.ok) throw new Error('API error');
+                
+                const data = await response.json();
+                displaySummaryResult(data);
+            } catch (error) {
+                showError('summaryError', 'Lỗi khi tóm tắt: ' + error.message);
+            } finally {
+                showLoading('summaryLoading', false);
+            }
+        }
+        
+        function displaySummaryResult(data) {
+            document.getElementById('summaryContent').textContent = data.summary;
+            document.getElementById('summaryResult').classList.add('show');
+        }
+        
+        // Utility functions
+        function showLoading(id, show) {
+            const el = document.getElementById(id);
+            if (show) el.classList.add('show');
+            else el.classList.remove('show');
+        }
+        
+        function showError(id, message) {
+            const el = document.getElementById(id);
+            el.textContent = '❌ ' + message;
+            el.classList.add('show');
+        }
+        
+        function hideError(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+        
+        function hideResult(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+        
+        // Initialize
+        checkHealth();
+        
+        // Auto-check health every 30 seconds
+        setInterval(checkHealth, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # Transformer model API service
+  transformer-api:
+    build: .
+    container_name: transformer-contract-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./outputs:/app/outputs
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - MODEL_PATH=/app/outputs/best_model.pt
+      - MAX_LENGTH=512
+      - BATCH_SIZE=8
+      - DEVICE=cpu
+    restart: unless-stopped
+    networks:
+      - transformer-net
+
+  # Monitoring với Prometheus (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: transformer-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - transformer-net
+    profiles:
+      - monitoring
+
+  # Grafana cho visualization (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: transformer-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - transformer-net
+    profiles:
+      - monitoring
+
+networks:
+  transformer-net:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:
