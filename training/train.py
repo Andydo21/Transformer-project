@@ -120,8 +120,8 @@ def train_with_hf_trainer(config):
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
-        compute_metrics=lambda pred: compute_metrics(pred, config['model']['task_type']),
-        tokenizer=tokenizer
+        compute_metrics=lambda pred: compute_metrics(pred, config['model']['task_type'])
+        # Note: tokenizer parameter removed in transformers v5+
     )
     
     # Train
