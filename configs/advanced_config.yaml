@@ -5,6 +5,7 @@ model:
   name: "vinai/phobert-base"
   task_type: "classification"
   num_labels: 3
+  max_length: 512  # Match training max_length
   dropout: 0.1
   hidden_dropout_prob: 0.1
   attention_probs_dropout_prob: 0.1
@@ -91,9 +92,10 @@ logging:
 
 data:
   # Data files
-  train_file: "data/train_samples.json"
-  val_file: "data/val_samples.json"
-  test_file: "data/test_samples.json"
+  train_file: "data/processed/train.json"
+  val_file: "data/processed/val.json"
+  test_file: "data/processed/test.json"
+  max_length: 512  # Added for compatibility
   
   # Data augmentation
   use_augmentation: true
