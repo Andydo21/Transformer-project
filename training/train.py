@@ -7,8 +7,8 @@ import sys
 import yaml
 import torch
 from torch.utils.data import DataLoader
+from torch.optim import AdamW
 from transformers import (
-    AdamW,
     get_linear_schedule_with_warmup,
     TrainingArguments,
     Trainer
