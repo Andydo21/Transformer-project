@@ -1,0 +1,38 @@
+# Summarization Config - Text Summarization (Seq2Seq)
+model:
+  name: "VietAI/vit5-base"  # ViT5 for Vietnamese seq2seq
+  task_type: "summarization"
+  max_length: 512
+  max_target_length: 128
+  dropout: 0.1
+
+training:
+  num_epochs: 8  # Summarization thường train ít epochs hơn
+  batch_size: 8  # Seq2seq cần nhiều memory
+  gradient_accumulation_steps: 4  # Effective: 32
+  learning_rate: 5e-5  # T5 thường cần lr cao hơn
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  max_grad_norm: 1.0
+  fp16: true
+  
+  # Checkpointing
+  save_steps: 100
+  save_total_limit: 2
+  load_best_model_at_end: false
+  
+  # Evaluation
+  eval_steps: 100
+  evaluation_strategy: "no"
+  
+  # Logging
+  logging_steps: 50
+  output_dir: "outputs/summarization"
+  logging_dir: "logs/summarization"
+
+data:
+  train_file: "data/processed/summarization/train.json"
+  val_file: "data/processed/summarization/val.json"
+  test_file: "data/processed/summarization/test.json"
+  max_length: 512
+  max_target_length: 128

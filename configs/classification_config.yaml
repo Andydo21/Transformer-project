@@ -1,0 +1,37 @@
+# Classification Config - 8 labels (Các loại luật)
+model:
+  name: "vinai/phobert-base"
+  task_type: "classification"
+  num_labels: 8  # 8 loại luật
+  max_length: 512
+  dropout: 0.1
+
+training:
+  num_epochs: 10  # Giảm từ 25 → 10 vì data nhiều hơn
+  batch_size: 16
+  gradient_accumulation_steps: 2  # Effective: 32
+  learning_rate: 2e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  max_grad_norm: 1.0
+  fp16: true
+  
+  # Checkpointing
+  save_steps: 50
+  save_total_limit: 2
+  load_best_model_at_end: false
+  
+  # Evaluation
+  eval_steps: 50
+  evaluation_strategy: "no"
+  
+  # Logging
+  logging_steps: 20
+  output_dir: "outputs/classification"
+  logging_dir: "logs/classification"
+
+data:
+  train_file: "data/processed/classification/train.json"
+  val_file: "data/processed/classification/val.json"
+  test_file: "data/processed/classification/test.json"
+  max_length: 512
