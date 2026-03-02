@@ -1,0 +1,68 @@
+# Universal Training Config - Dùng cho cả 4 tasks
+# Chỉ cần override task_type, num_labels, data_paths khi chạy
+
+model:
+  name: "vinai/phobert-base"
+  task_type: "classification"  # Will override: classification | ner | qa | summarization
+  num_labels: 8  # Will override per task
+  max_length: 512
+  dropout: 0.1
+
+training:
+  # Core settings
+  num_epochs: 10
+  batch_size: 16
+  gradient_accumulation_steps: 2  # Effective: 32
+  learning_rate: 2e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  max_grad_norm: 1.0
+  fp16: true
+  
+  # Checkpointing
+  save_steps: 50
+  save_total_limit: 2
+  load_best_model_at_end: false
+  
+  # Evaluation
+  eval_steps: 50
+  evaluation_strategy: "no"
+  
+  # Logging
+  logging_steps: 20
+  output_dir: "outputs/current_training"  # Will override per task
+  logging_dir: "logs/current_training"
+
+data:
+  train_file: "data/processed/classification/train.json"  # Will override
+  val_file: "data/processed/classification/val.json"
+  test_file: "data/processed/classification/test.json"
+  max_length: 512
+
+# Task-specific overrides
+tasks:
+  classification:
+    num_labels: 8
+    data_path: "data/processed/classification"
+    output_dir: "outputs/classification"
+  
+  ner:
+    num_labels: 5
+    data_path: "data/processed/ner"
+    output_dir: "outputs/ner"
+    learning_rate: 3e-5  # NER cần lr cao hơn
+  
+  qa:
+    num_labels: 2
+    data_path: "data/processed/qa"
+    output_dir: "outputs/qa"
+    batch_size: 8  # QA cần memory nhiều hơn
+    gradient_accumulation_steps: 4
+  
+  summarization:
+    model_name: "VietAI/vit5-base"  # Dùng ViT5 thay vì PhoBERT
+    data_path: "data/processed/summarization"
+    output_dir: "outputs/summarization"
+    num_epochs: 8
+    batch_size: 8
+    learning_rate: 5e-5
