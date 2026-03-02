@@ -92,9 +92,9 @@ logging:
 
 data:
   # Data files
-  train_file: "data/processed/train.json"
-  val_file: "data/processed/val.json"
-  test_file: "data/processed/test.json"
+  train_file: "data/processed/classification/train.json"
+  val_file: "data/processed/classification/val.json"
+  test_file: "data/processed/classification/test.json"
   max_length: 512  # Added for compatibility
   
   # Data augmentation
