@@ -51,7 +51,7 @@ checkpoints/
 
 # Data
 data/raw/*
-data/processed/*
+# data/processed/*  # COMMENTED: Cho phép push data lên GitHub
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 
