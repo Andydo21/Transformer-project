@@ -57,9 +57,20 @@ def train_task_best(task_name, model_name=None):
         'fp16': True,
     }
     
+    # Find advanced_train.py
+    script_path = None
+    for path in ["advanced_train.py", "../advanced_train.py", "../../advanced_train.py"]:
+        if Path(path).exists():
+            script_path = path
+            break
+    
+    if not script_path:
+        print(f"❌ Cannot find advanced_train.py")
+        return False
+    
     # Build command
     cmd = [
-        "python", "advanced_train.py",
+        "python", script_path,
         "--task", task_name,
         "--model", model_name,
         "--batch-size", str(config['batch_size']),
